@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/chuyennguFragment"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".Chuyenngu">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <FrameLayout
+            android:id="@+id/startAudioBtn"
+            android:layout_width="110dp"
+            android:layout_height="113dp"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="194dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="@drawable/ic_border">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:src="@drawable/ic_mic" />
+
+            </RelativeLayout>
+
+        </FrameLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/chuyennguHolder"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="325dp"
+            android:layout_height="136dp"
+            android:layout_below="@+id/startAudioBtn"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="137dp"
+            android:hint="@string/hint2">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/txtChuyenNgu"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/round_corner"
+                android:inputType="text"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+    </RelativeLayout>
+
+</FrameLayout>

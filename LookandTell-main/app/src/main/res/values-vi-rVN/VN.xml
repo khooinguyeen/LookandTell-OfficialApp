@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Look &amp; Tell</string>
+
+    <!-- Bottom nav !-->
+    <string name="home">Home</string>
+    <string name="dichngu">Dịch Ngữ</string>
+    <string name="chuyenngu">Chuyển Ngữ</string>
+    <string name="tudien">Từ điển</string>
+
+    <string name="hint1">Bản dịch</string>
+    <string name="hint2">Bản chuyển</string>
+    <string name="authors">*Thực hiện bởi Ngô Minh Quang và Mai Khôi Nguyên</string>
+    <string name="searching">Bạn đang tìm kiếm điều gì?</string>
+
+    <string name="startRecord">Bắt đầu ghi</string>
+    <string name="stopRecord">Dừng ghi</string>
+    <string name="audioStart">Bắt đầu ghi</string>
+    <string name="audioStop">Dừng ghi</string>
+
+
+</resources>

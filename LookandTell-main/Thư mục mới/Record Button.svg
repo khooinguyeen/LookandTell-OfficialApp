@@ -1,0 +1,7 @@
+<svg id="Record_Button" data-name="Record Button" xmlns="http://www.w3.org/2000/svg" width="66" height="65" viewBox="0 0 66 65">
+  <g id="Border" fill="none" stroke="#fffcfc" stroke-miterlimit="10" stroke-width="6.333">
+    <ellipse cx="33" cy="32.5" rx="33" ry="32.5" stroke="none"/>
+    <ellipse cx="33" cy="32.5" rx="29.833" ry="29.333" fill="none"/>
+  </g>
+  <rect id="Red_Disc" data-name="Red Disc" width="21" height="21" rx="4.5" transform="translate(22 22)" fill="#eb4e3d"/>
+</svg>

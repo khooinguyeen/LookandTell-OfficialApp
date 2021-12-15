@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/home"
+        android:title="@string/home"
+        android:icon="@drawable/ic_home"/>
+
+    <item
+        android:id="@+id/dichngu"
+        android:title="@string/dichngu"
+        android:icon="@drawable/ic_stt"/>
+
+    <item
+        android:id="@+id/chuyenngu"
+        android:title="@string/chuyenngu"
+        android:icon="@drawable/ic_vtt"/>
+
+    <item
+        android:id="@+id/tudien"
+        android:title="@string/tudien"
+        android:icon="@drawable/ic_dic"/>
+
+</menu>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/dichngu_stopFragment"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".dichngu_stop">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <androidx.camera.view.PreviewView
+            android:id="@+id/preview"
+            android:layout_width="359dp"
+            android:layout_height="286dp"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="117dp"
+            />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/dichnguHolder"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="325dp"
+            android:layout_height="136dp"
+            android:layout_below="@+id/preview"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="41dp"
+            android:hint="@string/hint1">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/txtDichNgu"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/round_corner"
+                android:inputType="text"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <ImageView
+            android:id="@+id/stopRecordBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@+id/dichnguHolder"
+            android:layout_centerHorizontal="true"
+            android:clickable="true"
+            android:focusable="true"
+            android:src="@drawable/ic_record_button"/>
+
+    </RelativeLayout>
+
+</FrameLayout>

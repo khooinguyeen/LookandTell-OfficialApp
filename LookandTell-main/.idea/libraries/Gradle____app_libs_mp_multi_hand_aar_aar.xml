@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: ./app/libs/mp_multi_hand_aar.aar">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/transforms-3/f0bb3a82c2363c0c06d10ca7ea8156ee/transformed/jetified-mp_multi_hand_aar/jars/classes.jar!/" />
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-3/f0bb3a82c2363c0c06d10ca7ea8156ee/transformed/jetified-mp_multi_hand_aar/res" />
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-3/f0bb3a82c2363c0c06d10ca7ea8156ee/transformed/jetified-mp_multi_hand_aar/AndroidManifest.xml" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
