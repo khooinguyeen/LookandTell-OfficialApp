@@ -94,10 +94,12 @@ public class Dichngu extends Fragment implements Serializable {
     private ApplicationInfo applicationInfo;
     // Handles camera access via the {@link CameraX} Jetpack support library.
     private CameraXPreviewHelper cameraHelper;
-    private List<Float> result = new ArrayList<>();
+    private float[] result = new float[126];
     private List<List<Float>> sequence = new ArrayList<>();
     private ByteBuffer resultAsByteBuffer;
     private ByteBuffer sequenceAsByteBuffer;
+
+
 
     public Dichngu() {
         // Required empty public constructor
@@ -170,25 +172,38 @@ public class Dichngu extends Fragment implements Serializable {
 //                    Log.v(TAG, String.valueOf(extractHandLandmarks(multiHandLandmarks).size()));
                     result = extractHandLandmarks(multiHandLandmarks);
 //                    Log.v(TAG, String.valueOf(result));
+//                    float[] resultAsArray = new float[result.size()];
+//                    int i = 0;
+//
+//                    for (Float f : result) {
+//                        resultAsArray[i++] = (f != null ? f : Float.NaN); // Or whatever default you want.
+//                    }
+//                    for (i=0; i<resultAsArray.length; i++) {
+//                        System.out.println(resultAsArray[i]);
+//                    }
 //                    sequence.add(result);
 //                    if (sequence.size() >= 30) {
 //                        sequence = sequence.subList(sequence.size()-30, sequence.size());}
-                    try {
-                        // TODO: only pick last 30 frames
-                        resultAsByteBuffer = toByteBuffer(result);
-//                        Log.v(TAG, StandardCharsets.ISO_8859_1.decode(resultAsByteBuffer).toString());
-                        sequenceAsByteBuffer = ByteBuffer.allocate(sequenceAsByteBuffer.limit()+resultAsByteBuffer.limit()).put(resultAsByteBuffer);
-                        SignLangModel model = SignLangModel.newInstance(view.getContext());
-                        TensorBuffer inputLandmarks = TensorBuffer.createFixedSize(new int[]{1, 30, 126}, DataType.FLOAT32);
-                        inputLandmarks.loadBuffer(sequenceAsByteBuffer);
-                        SignLangModel.Outputs outputs = model.process(inputLandmarks);
-                        TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
-                        TextView txtDichngu = view.findViewById(R.id.txtDichNgu);
-                        txtDichngu.setText(outputFeature0.toString());
+//                    try {
+//                        // TODO: only pick last 30 frames
+////                        resultAsByteBuffer = toByteBuffer(result);
+////                        Log.v(TAG, StandardCharsets.ISO_8859_1.decode(resultAsByteBuffer).toString());
+////                        String converted = new String(resultAsByteBuffer.array());
+////                        Log.v(TAG, converted);
+////                        sequenceAsByteBuffer = ByteBuffer.allocate(sequenceAsByteBuffer.limit()+resultAsByteBuffer.limit()).put(resultAsByteBuffer);
+//                        SignLangModel model = SignLangModel.newInstance(view.getContext());
+//                        TensorBuffer inputLandmarks = TensorBuffer.createFixedSize(new int[]{1, 30, 126}, DataType.FLOAT32);
+//
+//                        inputLandmarks.loadArray(resultAsArray);
+//                        SignLangModel.Outputs outputs = model.process(inputLandmarks);
+//                        TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
+//                        TextView txtDichngu = view.findViewById(R.id.txtDichNgu);
+//                        txtDichngu.setText(outputFeature0.toString());
 //                        Log.v(TAG, String.valueOf(outputFeature0));
-                    } catch (IOException e){
-                        e.printStackTrace();
-                    }
+//                    } catch (IOException e){
+//                        e.printStackTrace();
+//                    }
+                    // TODO: collect 30 frame, edit float[] result
 
                 });
 
@@ -309,7 +324,7 @@ public class Dichngu extends Fragment implements Serializable {
 
 
 
-    public List<Float> extractHandLandmarks(List<NormalizedLandmarkList> multiHandLandmarks) {
+    public float[] extractHandLandmarks(List<NormalizedLandmarkList> multiHandLandmarks) {
         List<Float> keypoints = new ArrayList<>();
         for (NormalizedLandmarkList landmarks : multiHandLandmarks) {
             for (NormalizedLandmark landmark : landmarks.getLandmarkList()) {
@@ -318,7 +333,13 @@ public class Dichngu extends Fragment implements Serializable {
                 keypoints.add(landmark.getZ());
             }
         }
-        return keypoints;
+        float[] result = new float[keypoints.size()];
+        int i = 0;
+
+        for (Float f : keypoints) {
+            result[i++] = (f != null ? f : Float.NaN); // Or whatever default you want.
+        }
+        return result;
     }
 
 
