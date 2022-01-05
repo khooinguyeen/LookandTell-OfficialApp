@@ -1,17 +1,12 @@
 package com.example.mainfinal;
 
-import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.graphics.SurfaceTexture;
 import android.os.Bundle;
 import com.example.mainfinal.R;
-import com.google.android.material.textfield.TextInputEditText;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import androidx.camera.core.CameraSelector;
-import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import android.util.Log;
@@ -24,7 +19,6 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
-import com.google.mediapipe.formats.proto.LandmarkProto;
 import com.google.mediapipe.formats.proto.LandmarkProto.NormalizedLandmark;
 import com.google.mediapipe.formats.proto.LandmarkProto.NormalizedLandmarkList;
 import com.google.mediapipe.components.CameraHelper;
@@ -38,16 +32,13 @@ import com.google.mediapipe.framework.PacketGetter;
 import com.google.mediapipe.framework.Packet;
 import com.google.mediapipe.glutil.EglManager;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
-import java.security.ProviderException;
-import java.util.Arrays;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -103,8 +94,10 @@ public class Dichngu extends Fragment implements Serializable {
     private ApplicationInfo applicationInfo;
     // Handles camera access via the {@link CameraX} Jetpack support library.
     private CameraXPreviewHelper cameraHelper;
-    private List<Float> result;
-    private List<Float> sequence = new ArrayList<>();
+    private List<Float> result = new ArrayList<>();
+    private List<List<Float>> sequence = new ArrayList<>();
+    private ByteBuffer resultAsByteBuffer;
+    private ByteBuffer sequenceAsByteBuffer;
 
     public Dichngu() {
         // Required empty public constructor
@@ -146,9 +139,9 @@ public class Dichngu extends Fragment implements Serializable {
         View view = inflater.inflate(R.layout.fragment_dichngu, container, false); // no delete
         FrameLayout startRecordBtn = view.findViewById(R.id.startRecordBtn);
 
-        previewDisplayView = new SurfaceView(getActivity());
+        previewDisplayView = new SurfaceView(view.getContext());
         setupPreviewDisplayView(view);
-        AndroidAssetUtil.initializeNativeAssetManager(getActivity());
+        AndroidAssetUtil.initializeNativeAssetManager(view.getContext());
         eglManager = new EglManager(null);
         processor =
                 new FrameProcessor(
@@ -176,23 +169,28 @@ public class Dichngu extends Fragment implements Serializable {
                             PacketGetter.getProtoVector(packet, NormalizedLandmarkList.parser());
 //                    Log.v(TAG, String.valueOf(extractHandLandmarks(multiHandLandmarks).size()));
                     result = extractHandLandmarks(multiHandLandmarks);
-                    sequence.addAll(result);
-                    if (sequence.size() >= 30) {
-                        sequence = sequence.subList(sequence.size()-30, sequence.size());}
-                });
+//                    Log.v(TAG, String.valueOf(result));
+//                    sequence.add(result);
+//                    if (sequence.size() >= 30) {
+//                        sequence = sequence.subList(sequence.size()-30, sequence.size());}
+                    try {
+                        // TODO: only pick last 30 frames
+                        resultAsByteBuffer = toByteBuffer(result);
+//                        Log.v(TAG, StandardCharsets.ISO_8859_1.decode(resultAsByteBuffer).toString());
+                        sequenceAsByteBuffer = ByteBuffer.allocate(sequenceAsByteBuffer.limit()+resultAsByteBuffer.limit()).put(resultAsByteBuffer);
+                        SignLangModel model = SignLangModel.newInstance(view.getContext());
+                        TensorBuffer inputLandmarks = TensorBuffer.createFixedSize(new int[]{1, 30, 126}, DataType.FLOAT32);
+                        inputLandmarks.loadBuffer(sequenceAsByteBuffer);
+                        SignLangModel.Outputs outputs = model.process(inputLandmarks);
+                        TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
+                        TextView txtDichngu = view.findViewById(R.id.txtDichNgu);
+                        txtDichngu.setText(outputFeature0.toString());
+//                        Log.v(TAG, String.valueOf(outputFeature0));
+                    } catch (IOException e){
+                        e.printStackTrace();
+                    }
 
-//        try {
-//            SignLangModel model = SignLangModel.newInstance(getActivity());
-//            TensorBuffer inputLandmarks = TensorBuffer.createFixedSize(new int[]{1, 30, 126}, DataType.FLOAT32);
-//            inputLandmarks.loadBuffer((ByteBuffer) sequence);
-//
-//            SignLangModel.Outputs outputs = model.process(inputLandmarks);
-//            TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
-//            TextInputEditText txtDichngu = view.findViewById(R.id.txtDichNgu);
-//            txtDichngu.setText((CharSequence) outputFeature0);
-//        } catch (IOException e){
-//
-//        }
+                });
 
 
         if (startRecordBtn != null) {
@@ -209,6 +207,7 @@ public class Dichngu extends Fragment implements Serializable {
 
         return view;//no delete
     }
+
     @Override
     public void onResume() {
         super.onResume();
@@ -323,5 +322,13 @@ public class Dichngu extends Fragment implements Serializable {
     }
 
 
-
+    private ByteBuffer toByteBuffer(List<Float> list) throws IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        ObjectOutputStream oos = new ObjectOutputStream(bos);
+        oos.writeObject(list);
+        byte[] bytes = bos.toByteArray();
+        ByteBuffer buffer = ByteBuffer.allocate(504); //15120 = 1*30*126*4, 504 = 126*4
+        ByteBuffer.wrap(bytes);
+        return buffer;
+    }
 }
