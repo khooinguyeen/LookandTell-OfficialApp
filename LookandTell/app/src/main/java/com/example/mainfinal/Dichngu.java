@@ -39,6 +39,7 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -95,9 +96,7 @@ public class Dichngu extends Fragment implements Serializable {
     // Handles camera access via the {@link CameraX} Jetpack support library.
     private CameraXPreviewHelper cameraHelper;
     private float[] result = new float[126];
-    private List<List<Float>> sequence = new ArrayList<>();
-    private ByteBuffer resultAsByteBuffer;
-    private ByteBuffer sequenceAsByteBuffer;
+    private float[][] sequence = new float[30][126];
 
 
 
@@ -166,44 +165,37 @@ public class Dichngu extends Fragment implements Serializable {
         processor.addPacketCallback(
                 OUTPUT_LANDMARKS_STREAM_NAME,
                 (packet) -> {
+                    for(int i=0; i<30; i++) {
+                        List<NormalizedLandmarkList> multiHandLandmarks =
+                                PacketGetter.getProtoVector(packet, NormalizedLandmarkList.parser());
+                        result = extractHandLandmarks(multiHandLandmarks);
+//                        Log.v(TAG, String.valueOf(result.length));
+                        sequence[i] = result;
+//                        Log.v(TAG, String.valueOf(sequence[i][0]));
+//                        System.out.print(Arrays.toString(sequence[i]));
+                    }
 
-                    List<NormalizedLandmarkList> multiHandLandmarks =
-                            PacketGetter.getProtoVector(packet, NormalizedLandmarkList.parser());
-//                    Log.v(TAG, String.valueOf(extractHandLandmarks(multiHandLandmarks).size()));
-                    result = extractHandLandmarks(multiHandLandmarks);
-//                    Log.v(TAG, String.valueOf(result));
-//                    float[] resultAsArray = new float[result.size()];
-//                    int i = 0;
-//
-//                    for (Float f : result) {
-//                        resultAsArray[i++] = (f != null ? f : Float.NaN); // Or whatever default you want.
-//                    }
-//                    for (i=0; i<resultAsArray.length; i++) {
-//                        System.out.println(resultAsArray[i]);
-//                    }
-//                    sequence.add(result);
-//                    if (sequence.size() >= 30) {
-//                        sequence = sequence.subList(sequence.size()-30, sequence.size());}
-//                    try {
-//                        // TODO: only pick last 30 frames
-////                        resultAsByteBuffer = toByteBuffer(result);
-////                        Log.v(TAG, StandardCharsets.ISO_8859_1.decode(resultAsByteBuffer).toString());
-////                        String converted = new String(resultAsByteBuffer.array());
-////                        Log.v(TAG, converted);
-////                        sequenceAsByteBuffer = ByteBuffer.allocate(sequenceAsByteBuffer.limit()+resultAsByteBuffer.limit()).put(resultAsByteBuffer);
-//                        SignLangModel model = SignLangModel.newInstance(view.getContext());
-//                        TensorBuffer inputLandmarks = TensorBuffer.createFixedSize(new int[]{1, 30, 126}, DataType.FLOAT32);
-//
-//                        inputLandmarks.loadArray(resultAsArray);
-//                        SignLangModel.Outputs outputs = model.process(inputLandmarks);
-//                        TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
-//                        TextView txtDichngu = view.findViewById(R.id.txtDichNgu);
-//                        txtDichngu.setText(outputFeature0.toString());
-//                        Log.v(TAG, String.valueOf(outputFeature0));
-//                    } catch (IOException e){
-//                        e.printStackTrace();
-//                    }
-                    // TODO: collect 30 frame, edit float[] result
+
+                    try {
+                        // TODO: only pick last 30 frames
+//                        resultAsByteBuffer = toByteBuffer(result);
+//                        Log.v(TAG, StandardCharsets.ISO_8859_1.decode(resultAsByteBuffer).toString());
+//                        String converted = new String(resultAsByteBuffer.array());
+//                        Log.v(TAG, converted);
+//                        sequenceAsByteBuffer = ByteBuffer.allocate(sequenceAsByteBuffer.limit()+resultAsByteBuffer.limit()).put(resultAsByteBuffer);
+                        SignLangModel model = SignLangModel.newInstance(view.getContext());
+                        TensorBuffer inputLandmarks = TensorBuffer.createFixedSize(new int[]{1, 30, 126}, DataType.FLOAT32);
+
+                        inputLandmarks.loadArray(result);
+                        SignLangModel.Outputs outputs = model.process(inputLandmarks);
+                        TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
+                        TextView txtDichngu = view.findViewById(R.id.txtDichNgu);
+                        txtDichngu.setText(outputFeature0.toString());
+                        Log.v(TAG, String.valueOf(outputFeature0));
+                    } catch (IOException e){
+                        e.printStackTrace();
+                    }
+//                     TODO: collect 30 frame, edit float[] result
 
                 });
 
