@@ -1,6 +1,8 @@
 package com.example.mainfinal;
 
 import android.content.pm.ApplicationInfo;
+import android.content.res.AssetFileDescriptor;
+import android.content.res.AssetManager;
 import android.graphics.SurfaceTexture;
 import android.os.Bundle;
 import com.example.mainfinal.R;
@@ -33,10 +35,14 @@ import com.google.mediapipe.framework.Packet;
 import com.google.mediapipe.glutil.EglManager;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,8 +52,9 @@ import java.util.Map;
 
 import com.example.mainfinal.ml.SignLangModel;
 
-import org.tensorflow.lite.DataType;
-import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
+import org.jetbrains.annotations.NotNull;
+import org.tensorflow.lite.Interpreter;
+import org.tensorflow.lite.support.common.FileUtil;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -79,29 +86,22 @@ public class Dichngu extends Fragment implements Serializable {
 
     private String mParam1;
     private String mParam2;
-    // {@link SurfaceTexture} where the camera-preview frames can be accessed.
     private SurfaceTexture previewFrameTexture;
-    // {@link SurfaceView} that displays the camera-preview frames processed by a MediaPipe graph.
     private SurfaceView previewDisplayView;
-    // Creates and manages an {@link EGLContext}.
     private EglManager eglManager;
-    // Sends camera-preview frames into a MediaPipe graph for processing, and displays the processed
-    // frames onto a {@link Surface}.
     private FrameProcessor processor;
-    // Converts the GL_TEXTURE_EXTERNAL_OES texture from Android camera into a regular texture to be
-    // consumed by {@link FrameProcessor} and the underlying MediaPipe graph.
     private ExternalTextureConverter converter;
-    // ApplicationInfo for retrieving metadata defined in the manifest.
     private ApplicationInfo applicationInfo;
-    // Handles camera access via the {@link CameraX} Jetpack support library.
     private CameraXPreviewHelper cameraHelper;
     private float[] result = new float[126];
     private float[][] sequence = new float[30][126];
-
-
-
+    private float[][] outputArray = new float[30][126];
+    protected Interpreter tflite;
+    private final Interpreter.Options tfliteOptions = new Interpreter.Options();
+    private static final String MODEL_FILENAME = "file:///ml/SignLangModel.tflite";
+    private MappedByteBuffer tfliteModel;
+    String actualModelFilename = MODEL_FILENAME.split("file:///ml/", -1)[1];
     public Dichngu() {
-        // Required empty public constructor
     }
 
     /**
@@ -174,27 +174,34 @@ public class Dichngu extends Fragment implements Serializable {
 //                        Log.v(TAG, String.valueOf(sequence[i][0]));
 //                        System.out.print(Arrays.toString(sequence[i]));
                     }
-
-
                     try {
-                        // TODO: only pick last 30 frames
-//                        resultAsByteBuffer = toByteBuffer(result);
-//                        Log.v(TAG, StandardCharsets.ISO_8859_1.decode(resultAsByteBuffer).toString());
-//                        String converted = new String(resultAsByteBuffer.array());
-//                        Log.v(TAG, converted);
-//                        sequenceAsByteBuffer = ByteBuffer.allocate(sequenceAsByteBuffer.limit()+resultAsByteBuffer.limit()).put(resultAsByteBuffer);
-                        SignLangModel model = SignLangModel.newInstance(view.getContext());
-                        TensorBuffer inputLandmarks = TensorBuffer.createFixedSize(new int[]{1, 30, 126}, DataType.FLOAT32);
-
-                        inputLandmarks.loadArray(result);
-                        SignLangModel.Outputs outputs = model.process(inputLandmarks);
-                        TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
-                        TextView txtDichngu = view.findViewById(R.id.txtDichNgu);
-                        txtDichngu.setText(outputFeature0.toString());
-                        Log.v(TAG, String.valueOf(outputFeature0));
-                    } catch (IOException e){
-                        e.printStackTrace();
+                        tfliteModel = loadModelFile(getActivity().getAssets(), actualModelFilename);
+                        tflite = new Interpreter(tfliteModel, tfliteOptions);
+                        tflite.run(sequence, outputArray);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
                     }
+
+
+//                    try {
+//                        // TODO: only pick last 30 frames
+////                        resultAsByteBuffer = toByteBuffer(result);
+////                        Log.v(TAG, StandardCharsets.ISO_8859_1.decode(resultAsByteBuffer).toString());
+////                        String converted = new String(resultAsByteBuffer.array());
+////                        Log.v(TAG, converted);
+////                        sequenceAsByteBuffer = ByteBuffer.allocate(sequenceAsByteBuffer.limit()+resultAsByteBuffer.limit()).put(resultAsByteBuffer);
+//                        SignLangModel model = SignLangModel.newInstance(view.getContext());
+//                        TensorBuffer inputLandmarks = TensorBuffer.createFixedSize(new int[]{1, 30, 126}, DataType.FLOAT32);
+//
+//                        inputLandmarks.loadArray(result);
+//                        SignLangModel.Outputs outputs = model.process(inputLandmarks);
+//                        TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
+//                        TextView txtDichngu = view.findViewById(R.id.txtDichNgu);
+//                        txtDichngu.setText(outputFeature0.toString());
+//                        Log.v(TAG, String.valueOf(outputFeature0));
+//                    } catch (IOException e){
+//                        e.printStackTrace();
+//                    }
 //                     TODO: collect 30 frame, edit float[] result
 
                 });
@@ -334,7 +341,6 @@ public class Dichngu extends Fragment implements Serializable {
         return result;
     }
 
-
     private ByteBuffer toByteBuffer(List<Float> list) throws IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(bos);
@@ -344,4 +350,15 @@ public class Dichngu extends Fragment implements Serializable {
         ByteBuffer.wrap(bytes);
         return buffer;
     }
+
+    private static MappedByteBuffer loadModelFile(AssetManager assets, String modelFilename)
+            throws IOException {
+        AssetFileDescriptor fileDescriptor = assets.openFd(modelFilename);
+        FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
+        FileChannel fileChannel = inputStream.getChannel();
+        long startOffset = fileDescriptor.getStartOffset();
+        long declaredLength = fileDescriptor.getDeclaredLength();
+        return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
+    }
+
 }
