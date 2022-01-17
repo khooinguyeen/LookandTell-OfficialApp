@@ -1,17 +1,1 @@
-ban hieu ngon ngu ky hieu khong,
-ban muon gio roi, ban trong cau co the,cai nay la cai gi,
-cap cuu, cong viec cua ban la gi,
-hen gap lai cac ban,
-toi bi cuop,
-toi bi dau dau,
-toi can an sang,
-toi dang an sang,
-toi dang o ben xe,
-toi dang o cong vien,
-toi dang phai cach ly,
-toi di sieu thi,
-toi di toi Ha Noi,
-toi khoi benh roi,
-toi khong quan tam,
-toi thay nho ban,
-toi thich an mi
+ban hieu ngon ngu ky hieu khong,ban muon gio roi,ban trong cau co the,cai nay la cai gi,cap cuu,cong viec cua ban la gi,hen gap lai cac ban,toi bi cuop,toi bi dau dau,toi can an sang,toi dang an sang,toi dang o ben xe,toi dang o cong vien,toi dang phai cach ly,toi di sieu thi,toi di toi Ha Noi,toi khoi benh roi,toi khong quan tam,toi thay nho ban,toi thich an mi

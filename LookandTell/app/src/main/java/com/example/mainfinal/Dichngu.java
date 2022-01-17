@@ -1,8 +1,7 @@
 package com.example.mainfinal;
 
 import android.content.pm.ApplicationInfo;
-import android.content.res.AssetFileDescriptor;
-import android.content.res.AssetManager;
+import android.graphics.Color;
 import android.graphics.SurfaceTexture;
 import android.os.Bundle;
 import com.example.mainfinal.R;
@@ -11,6 +10,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.fragment.app.Fragment;
 
+import android.text.style.ForegroundColorSpan;
+import android.text.style.RelativeSizeSpan;
 import android.util.Log;
 import android.util.Size;
 import android.view.LayoutInflater;
@@ -20,6 +21,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.TextView;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
 
 import com.google.mediapipe.formats.proto.LandmarkProto.NormalizedLandmark;
 import com.google.mediapipe.formats.proto.LandmarkProto.NormalizedLandmarkList;
@@ -36,16 +39,13 @@ import com.google.mediapipe.glutil.EglManager;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.charset.StandardCharsets;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -81,7 +81,6 @@ public class Dichngu extends Fragment implements Serializable {
 
     // TODO: Rename and change types of parameters
     static {
-        // Load all native libraries needed by the app.
         System.loadLibrary("mediapipe_jni");
         System.loadLibrary("opencv_java3");
     }
@@ -102,8 +101,22 @@ public class Dichngu extends Fragment implements Serializable {
     protected Interpreter tflite;
     private final Interpreter.Options tfliteOptions = new Interpreter.Options();
     private List<String> labelList;
-    private static final int FILTER_STAGES = 3;
+    private static final int FILTER_STAGES = 1; //3
     private static final float FILTER_FACTOR = 0.4f;
+    private static final int RESULTS_TO_SHOW = 1; //3
+    private static final float GOOD_PROB_THRESHOLD = 0.3f;
+    private static final int SMALL_COLOR = 0xffddaa88;
+    private SpannableStringBuilder builder;
+    private TextView txtDichngu;
+    private PriorityQueue<Map.Entry<String, Float>> sortedLabels =
+            new PriorityQueue<>(
+                    RESULTS_TO_SHOW,
+                    new Comparator<Map.Entry<String, Float>>() {
+                        @Override
+                        public int compare(Map.Entry<String, Float> o1, Map.Entry<String, Float> o2) {
+                            return (o1.getValue()).compareTo(o2.getValue());
+                        }
+                    });
 
     public Dichngu() {
     }
@@ -140,10 +153,9 @@ public class Dichngu extends Fragment implements Serializable {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_dichngu, container, false); // no delete
         FrameLayout startRecordBtn = view.findViewById(R.id.startRecordBtn);
-
+        txtDichngu = view.findViewById(R.id.txtDichNgu);
         previewDisplayView = new SurfaceView(view.getContext());
         setupPreviewDisplayView(view);
         AndroidAssetUtil.initializeNativeAssetManager(view.getContext());
@@ -166,55 +178,29 @@ public class Dichngu extends Fragment implements Serializable {
         inputSidePackets.put(INPUT_NUM_HANDS_SIDE_PACKET_NAME, packetCreator.createInt32(NUM_HANDS));
         processor.setInputSidePackets(inputSidePackets);
 
+        try {
+            initializeModel();
+            labelList = loadLabelList();
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to initialize model.", e);
+        }
+
         processor.addPacketCallback(
                 OUTPUT_LANDMARKS_STREAM_NAME,
                 (packet) -> {
-                    try {
-                        initializeModel();
-                        labelList =loadLabelList();
-                        for(int i=0; i<60; i++) {
-                            List<NormalizedLandmarkList> multiHandLandmarks =
-                                    PacketGetter.getProtoVector(packet, NormalizedLandmarkList.parser());
-                            result = extractHandLandmarks(multiHandLandmarks);
-                            sequence[i] = result;
-                        }
-                        filterLabelProbArray = new float[FILTER_STAGES][getNumLabels()];
-                        labelProbArray = new float[1][getNumLabels()];
-                        runInference();
-                        applyFilter();
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                    printTopKLabels(builder);
+                    for(int i=0; i<60; i++) {
+                        List<NormalizedLandmarkList> multiHandLandmarks =
+                                PacketGetter.getProtoVector(packet, NormalizedLandmarkList.parser());
+                        result = extractHandLandmarks(multiHandLandmarks);
+                        sequence[i] = result;
                     }
-
-
-
-
-
-
-
-//                    try {
-//                        // TODO: only pick last 30 frames
-////                        resultAsByteBuffer = toByteBuffer(result);
-////                        Log.v(TAG, StandardCharsets.ISO_8859_1.decode(resultAsByteBuffer).toString());
-////                        String converted = new String(resultAsByteBuffer.array());
-////                        Log.v(TAG, converted);
-////                        sequenceAsByteBuffer = ByteBuffer.allocate(sequenceAsByteBuffer.limit()+resultAsByteBuffer.limit()).put(resultAsByteBuffer);
-//                        SignLangModel model = SignLangModel.newInstance(view.getContext());
-//                        TensorBuffer inputLandmarks = TensorBuffer.createFixedSize(new int[]{1, 30, 126}, DataType.FLOAT32);
-//
-//                        inputLandmarks.loadArray(result);
-//                        SignLangModel.Outputs outputs = model.process(inputLandmarks);
-//                        TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
-//                        TextView txtDichngu = view.findViewById(R.id.txtDichNgu);
-//                        txtDichngu.setText(outputFeature0.toString());
-//                        Log.v(TAG, String.valueOf(outputFeature0));
-//                    } catch (IOException e){
-//                        e.printStackTrace();
-//                    }
-//                     TODO: collect 30 frame, edit float[] result
-
+                    filterLabelProbArray = new float[FILTER_STAGES][getNumLabels()];
+                    labelProbArray = new float[1][getNumLabels()];
+                    runInference();
+                    applyFilter();
+                    txtDichngu.setText(builder, TextView.BufferType.SPANNABLE);
                 });
-
 
         if (startRecordBtn != null) {
             startRecordBtn.setOnClickListener(new View.OnClickListener() {
@@ -227,8 +213,7 @@ public class Dichngu extends Fragment implements Serializable {
                 }
             });
         }
-
-        return view;//no delete
+        return view;
     }
 
     @Override
@@ -310,16 +295,9 @@ public class Dichngu extends Fragment implements Serializable {
 
     protected void onPreviewDisplaySurfaceChanged(
             SurfaceHolder holder, int format, int width, int height) {
-        // (Re-)Compute the ideal size of the camera-preview display (the area that the
-        // camera-preview frames get rendered onto, potentially with scaling and rotation)
-        // based on the size of the SurfaceView that contains the display.
         Size viewSize = computeViewSize(width, height);
         Size displaySize = cameraHelper.computeDisplaySizeFromViewSize(viewSize);
         boolean isCameraRotated = cameraHelper.isCameraRotated();
-
-        // Connect the converter to the camera-preview frames as its input (via
-        // previewFrameTexture), and configure the output width and height as the computed
-        // display size.
         converter.setSurfaceTextureAndAttachToGLContext(
                 previewFrameTexture,
                 isCameraRotated ? displaySize.getHeight() : displaySize.getWidth(),
@@ -329,8 +307,6 @@ public class Dichngu extends Fragment implements Serializable {
     protected Size computeViewSize(int width, int height) {
         return new Size(width, height);
     }
-
-
 
     public float[] extractHandLandmarks(List<NormalizedLandmarkList> multiHandLandmarks) {
         List<Float> keypoints = new ArrayList<>();
@@ -345,7 +321,7 @@ public class Dichngu extends Fragment implements Serializable {
         int i = 0;
 
         for (Float f : keypoints) {
-            result[i++] = (f != null ? f : Float.NaN); // Or whatever default you want.
+            result[i++] = (f != null ? f : Float.NaN);
         }
         return result;
     }
@@ -363,12 +339,11 @@ public class Dichngu extends Fragment implements Serializable {
     void applyFilter() {
         int numLabels = getNumLabels();
 
-        // Low pass filter `labelProbArray` into the first stage of the filter.
         for (int j = 0; j < numLabels; ++j) {
             filterLabelProbArray[0][j] +=
                     FILTER_FACTOR * (getProbability(j) - filterLabelProbArray[0][j]);
         }
-        // Low pass filter each stage into the next.
+
         for (int i = 1; i < FILTER_STAGES; ++i) {
             for (int j = 0; j < numLabels; ++j) {
                 filterLabelProbArray[i][j] +=
@@ -376,13 +351,11 @@ public class Dichngu extends Fragment implements Serializable {
             }
         }
 
-        // Copy the last stage filter output back to `labelProbArray`.
         for (int j = 0; j < numLabels; ++j) {
             setProbability(j, filterLabelProbArray[FILTER_STAGES - 1][j]);
         }
     }
 
-    /* Sets number of threads and re-initialize model. */
     public void setNumThreads(int numThreads) throws IOException {
         if (tflite != null) {
             tfliteOptions.setNumThreads(numThreads);
@@ -418,6 +391,37 @@ public class Dichngu extends Fragment implements Serializable {
             labelList.add(token);
         }
         return labelList;
+    }
+
+    private void printTopKLabels(SpannableStringBuilder builder) {
+        for (int i = 0; i < getNumLabels(); ++i) {
+            sortedLabels.add(
+                    new AbstractMap.SimpleEntry<>(labelList.get(i), getNormalizedProbability(i)));
+            if (sortedLabels.size() > RESULTS_TO_SHOW) {
+                sortedLabels.poll();
+            }
+        }
+
+        final int size = sortedLabels.size();
+        for (int i = 0; i < size; i++) {
+            Map.Entry<String, Float> label = sortedLabels.poll();
+            SpannableString span =
+                    new SpannableString(String.format("%s:  %4.2f\n", label.getKey(), label.getValue()));
+            int color;
+            // Make it white when probability larger than threshold.
+            if (label.getValue() > GOOD_PROB_THRESHOLD) {
+                color = Color.BLACK;
+            } else {
+                color = SMALL_COLOR;
+            }
+            // Make first item bigger.
+            if (i == size - 1) {
+                float sizeScale = (i == size - 1) ? 1.75f : 0.8f;
+                span.setSpan(new RelativeSizeSpan(sizeScale), 0, span.length(), 0);
+            }
+            span.setSpan(new ForegroundColorSpan(color), 0, span.length(), 0);
+            builder.insert(0, span);
+        }
     }
 
     protected int getNumLabels() {
