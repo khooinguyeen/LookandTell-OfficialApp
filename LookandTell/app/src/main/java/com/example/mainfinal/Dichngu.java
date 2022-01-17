@@ -34,10 +34,12 @@ import com.google.mediapipe.framework.PacketGetter;
 import com.google.mediapipe.framework.Packet;
 import com.google.mediapipe.glutil.EglManager;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
@@ -46,13 +48,13 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
+import java.util.StringTokenizer;
 
-import com.example.mainfinal.ml.SignLangModel;
-
-import org.jetbrains.annotations.NotNull;
 import org.tensorflow.lite.Interpreter;
 import org.tensorflow.lite.support.common.FileUtil;
 
@@ -94,13 +96,15 @@ public class Dichngu extends Fragment implements Serializable {
     private ApplicationInfo applicationInfo;
     private CameraXPreviewHelper cameraHelper;
     private float[] result = new float[126];
-    private float[][] sequence = new float[30][126];
-    private float[][] outputArray = new float[30][126];
+    private float[][] sequence = new float[60][126];
+    private float[][] labelProbArray = null;
+    private float[][] filterLabelProbArray = null;
     protected Interpreter tflite;
     private final Interpreter.Options tfliteOptions = new Interpreter.Options();
-    private static final String MODEL_FILENAME = "file:///ml/SignLangModel.tflite";
-    private MappedByteBuffer tfliteModel;
-    String actualModelFilename = MODEL_FILENAME.split("file:///ml/", -1)[1];
+    private List<String> labelList;
+    private static final int FILTER_STAGES = 3;
+    private static final float FILTER_FACTOR = 0.4f;
+
     public Dichngu() {
     }
 
@@ -165,22 +169,27 @@ public class Dichngu extends Fragment implements Serializable {
         processor.addPacketCallback(
                 OUTPUT_LANDMARKS_STREAM_NAME,
                 (packet) -> {
-                    for(int i=0; i<30; i++) {
-                        List<NormalizedLandmarkList> multiHandLandmarks =
-                                PacketGetter.getProtoVector(packet, NormalizedLandmarkList.parser());
-                        result = extractHandLandmarks(multiHandLandmarks);
-//                        Log.v(TAG, String.valueOf(result.length));
-                        sequence[i] = result;
-//                        Log.v(TAG, String.valueOf(sequence[i][0]));
-//                        System.out.print(Arrays.toString(sequence[i]));
-                    }
                     try {
-                        tfliteModel = loadModelFile(getActivity().getAssets(), actualModelFilename);
-                        tflite = new Interpreter(tfliteModel, tfliteOptions);
-                        tflite.run(sequence, outputArray);
+                        initializeModel();
+                        labelList =loadLabelList();
+                        for(int i=0; i<60; i++) {
+                            List<NormalizedLandmarkList> multiHandLandmarks =
+                                    PacketGetter.getProtoVector(packet, NormalizedLandmarkList.parser());
+                            result = extractHandLandmarks(multiHandLandmarks);
+                            sequence[i] = result;
+                        }
+                        filterLabelProbArray = new float[FILTER_STAGES][getNumLabels()];
+                        labelProbArray = new float[1][getNumLabels()];
+                        runInference();
+                        applyFilter();
                     } catch (IOException e) {
-                        throw new RuntimeException(e);
+                        e.printStackTrace();
                     }
+
+
+
+
+
 
 
 //                    try {
@@ -351,14 +360,91 @@ public class Dichngu extends Fragment implements Serializable {
         return buffer;
     }
 
-    private static MappedByteBuffer loadModelFile(AssetManager assets, String modelFilename)
-            throws IOException {
-        AssetFileDescriptor fileDescriptor = assets.openFd(modelFilename);
-        FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
-        FileChannel fileChannel = inputStream.getChannel();
-        long startOffset = fileDescriptor.getStartOffset();
-        long declaredLength = fileDescriptor.getDeclaredLength();
-        return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
+    void applyFilter() {
+        int numLabels = getNumLabels();
+
+        // Low pass filter `labelProbArray` into the first stage of the filter.
+        for (int j = 0; j < numLabels; ++j) {
+            filterLabelProbArray[0][j] +=
+                    FILTER_FACTOR * (getProbability(j) - filterLabelProbArray[0][j]);
+        }
+        // Low pass filter each stage into the next.
+        for (int i = 1; i < FILTER_STAGES; ++i) {
+            for (int j = 0; j < numLabels; ++j) {
+                filterLabelProbArray[i][j] +=
+                        FILTER_FACTOR * (filterLabelProbArray[i - 1][j] - filterLabelProbArray[i][j]);
+            }
+        }
+
+        // Copy the last stage filter output back to `labelProbArray`.
+        for (int j = 0; j < numLabels; ++j) {
+            setProbability(j, filterLabelProbArray[FILTER_STAGES - 1][j]);
+        }
     }
+
+    /* Sets number of threads and re-initialize model. */
+    public void setNumThreads(int numThreads) throws IOException {
+        if (tflite != null) {
+            tfliteOptions.setNumThreads(numThreads);
+            close();
+        }
+        initializeModel();
+    }
+
+    /** Closes tflite to release resources. */
+    public void close() {
+        tflite.close();
+        tflite = null;
+    }
+
+    private void initializeModel() throws IOException {
+        if (tflite == null) {
+            MappedByteBuffer tfliteModel = FileUtil.loadMappedFile(getActivity(), getModelPath());
+            tflite = new Interpreter(tfliteModel, tfliteOptions);
+        }
+    }
+
+    private List<String> loadLabelList() throws IOException {
+        List<String> labelList = new ArrayList<String>();
+        BufferedReader reader =
+                new BufferedReader(new InputStreamReader(getActivity().getAssets().open(getLabelPath())));
+        String line;
+        line = reader.readLine();
+        reader.close();
+
+        StringTokenizer tokenizer = new StringTokenizer(line, ",");
+        while (tokenizer.hasMoreTokens()) {
+            String token = tokenizer.nextToken();
+            labelList.add(token);
+        }
+        return labelList;
+    }
+
+    protected int getNumLabels() {
+        return labelList.size();
+    }
+    protected String getModelPath() {
+        return "model.tflite";
+    }
+    protected String getLabelPath() {
+        return "labels.txt";
+    }
+    protected float getProbability(int labelIndex) {
+        return labelProbArray[0][labelIndex];
+    }
+    protected void setProbability(int labelIndex, Number value) {
+        labelProbArray[0][labelIndex] = value.floatValue();
+    }
+    protected float getNormalizedProbability(int labelIndex) {
+        // TODO the following value isn't in [0,1] yet, but may be greater. Why?
+        return getProbability(labelIndex);
+    }
+    protected void runInference() {
+        tflite.run(sequence, labelProbArray);
+    }
+
+
+
+
 
 }
