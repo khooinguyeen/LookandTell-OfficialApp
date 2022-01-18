@@ -33,6 +33,7 @@ import com.google.mediapipe.components.FrameProcessor;
 import com.google.mediapipe.components.PermissionHelper;
 import com.google.mediapipe.framework.AndroidAssetUtil;
 import com.google.mediapipe.framework.AndroidPacketCreator;
+import com.google.mediapipe.framework.PacketCallback;
 import com.google.mediapipe.framework.PacketGetter;
 import com.google.mediapipe.framework.Packet;
 import com.google.mediapipe.glutil.EglManager;
@@ -187,19 +188,22 @@ public class Dichngu extends Fragment implements Serializable {
 
         processor.addPacketCallback(
                 OUTPUT_LANDMARKS_STREAM_NAME,
-                (packet) -> {
-                    printTopKLabels(builder);
-                    for(int i=0; i<60; i++) {
-                        List<NormalizedLandmarkList> multiHandLandmarks =
-                                PacketGetter.getProtoVector(packet, NormalizedLandmarkList.parser());
-                        result = extractHandLandmarks(multiHandLandmarks);
-                        sequence[i] = result;
+                new PacketCallback() {
+                    @Override
+                    public void process(Packet packet) {
+                        Dichngu.this.printTopKLabels(builder);
+                        for (int i = 0; i < 60; i++) {
+                            List<NormalizedLandmarkList> multiHandLandmarks =
+                                    PacketGetter.getProtoVector(packet, NormalizedLandmarkList.parser());
+                            result = Dichngu.this.extractHandLandmarks(multiHandLandmarks);
+                            sequence[i] = result;
+                        }
+                        filterLabelProbArray = new float[FILTER_STAGES][Dichngu.this.getNumLabels()];
+                        labelProbArray = new float[1][Dichngu.this.getNumLabels()];
+                        Dichngu.this.runInference();
+                        Dichngu.this.applyFilter();
+                        txtDichngu.setText(builder, TextView.BufferType.SPANNABLE);
                     }
-                    filterLabelProbArray = new float[FILTER_STAGES][getNumLabels()];
-                    labelProbArray = new float[1][getNumLabels()];
-                    runInference();
-                    applyFilter();
-                    txtDichngu.setText(builder, TextView.BufferType.SPANNABLE);
                 });
 
         if (startRecordBtn != null) {
@@ -236,6 +240,12 @@ public class Dichngu extends Fragment implements Serializable {
 
         // Hide preview display until we re-open the camera again.
         previewDisplayView.setVisibility(View.GONE);
+    }
+
+    @Override
+    public void onDestroy() {
+        close();
+        super.onDestroy();
     }
 
     @Override
