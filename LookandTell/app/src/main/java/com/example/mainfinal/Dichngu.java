@@ -10,6 +10,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.fragment.app.Fragment;
 
+import android.os.Handler;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.RelativeSizeSpan;
 import android.util.Log;
@@ -97,28 +98,23 @@ public class Dichngu extends Fragment implements Serializable {
     private CameraXPreviewHelper cameraHelper;
     private float[] result = new float[126];
     private float[][] sequence = new float[60][126];
-    private float[][] labelProbArray = null;
-    private float[][] filterLabelProbArray = null;
+    private float[][] labelProbArray = new float[1][20];
+    private float[][] filterLabelProbArray = new float[FILTER_STAGES][20];
     protected Interpreter tflite;
     private final Interpreter.Options tfliteOptions = new Interpreter.Options();
     private List<String> labelList;
-    private static final int FILTER_STAGES = 1; //3
+    private static final int FILTER_STAGES = 3;
     private static final float FILTER_FACTOR = 0.4f;
-    private static final int RESULTS_TO_SHOW = 1; //3
+    private static final int RESULTS_TO_SHOW = 3;
     private static final float GOOD_PROB_THRESHOLD = 0.3f;
     private static final int SMALL_COLOR = 0xffddaa88;
-    private SpannableStringBuilder builder;
+    private SpannableStringBuilder builder = new SpannableStringBuilder();
     private TextView txtDichngu;
     private PriorityQueue<Map.Entry<String, Float>> sortedLabels =
             new PriorityQueue<>(
                     RESULTS_TO_SHOW,
-                    new Comparator<Map.Entry<String, Float>>() {
-                        @Override
-                        public int compare(Map.Entry<String, Float> o1, Map.Entry<String, Float> o2) {
-                            return (o1.getValue()).compareTo(o2.getValue());
-                        }
-                    });
-
+                    (o1, o2) -> (o1.getValue()).compareTo(o2.getValue()));
+    private Handler backgroundHandler;
     public Dichngu() {
     }
 
@@ -147,6 +143,15 @@ public class Dichngu extends Fragment implements Serializable {
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
+
+        try {
+            initializeModel();
+            labelList = loadLabelList();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        labelProbArray = new float[1][getNumLabels()];
+        filterLabelProbArray = new float[FILTER_STAGES][getNumLabels()];
     }
 
     ListenableFuture<ProcessCameraProvider> cameraProviderListenableFuture;
@@ -161,50 +166,7 @@ public class Dichngu extends Fragment implements Serializable {
         setupPreviewDisplayView(view);
         AndroidAssetUtil.initializeNativeAssetManager(view.getContext());
         eglManager = new EglManager(null);
-        processor =
-                new FrameProcessor(
-                        getActivity(),
-                        eglManager.getNativeContext(),
-                        BINARY_GRAPH_NAME,
-                        INPUT_VIDEO_STREAM_NAME,
-                        OUTPUT_VIDEO_STREAM_NAME);
-        processor
-                .getVideoSurfaceOutput()
-                .setFlipY(FLIP_FRAMES_VERTICALLY);
-
-        PermissionHelper.checkAndRequestCameraPermissions(getActivity());
-        AndroidPacketCreator packetCreator = processor.getPacketCreator();
-        Map<String, Packet> inputSidePackets = new HashMap<>();
-
-        inputSidePackets.put(INPUT_NUM_HANDS_SIDE_PACKET_NAME, packetCreator.createInt32(NUM_HANDS));
-        processor.setInputSidePackets(inputSidePackets);
-
-        try {
-            initializeModel();
-            labelList = loadLabelList();
-        } catch (IOException e) {
-            Log.e(TAG, "Failed to initialize model.", e);
-        }
-
-        processor.addPacketCallback(
-                OUTPUT_LANDMARKS_STREAM_NAME,
-                new PacketCallback() {
-                    @Override
-                    public void process(Packet packet) {
-                        Dichngu.this.printTopKLabels(builder);
-                        for (int i = 0; i < 60; i++) {
-                            List<NormalizedLandmarkList> multiHandLandmarks =
-                                    PacketGetter.getProtoVector(packet, NormalizedLandmarkList.parser());
-                            result = Dichngu.this.extractHandLandmarks(multiHandLandmarks);
-                            sequence[i] = result;
-                        }
-                        filterLabelProbArray = new float[FILTER_STAGES][Dichngu.this.getNumLabels()];
-                        labelProbArray = new float[1][Dichngu.this.getNumLabels()];
-                        Dichngu.this.runInference();
-                        Dichngu.this.applyFilter();
-                        txtDichngu.setText(builder, TextView.BufferType.SPANNABLE);
-                    }
-                });
+        backgroundHandler.post(periodicClassify);
 
         if (startRecordBtn != null) {
             startRecordBtn.setOnClickListener(new View.OnClickListener() {
@@ -433,6 +395,54 @@ public class Dichngu extends Fragment implements Serializable {
             builder.insert(0, span);
         }
     }
+
+    private void classifyProcessor() {
+        processor =
+                new FrameProcessor(
+                        getActivity(),
+                        eglManager.getNativeContext(),
+                        BINARY_GRAPH_NAME,
+                        INPUT_VIDEO_STREAM_NAME,
+                        OUTPUT_VIDEO_STREAM_NAME);
+        processor
+                .getVideoSurfaceOutput()
+                .setFlipY(FLIP_FRAMES_VERTICALLY);
+
+        PermissionHelper.checkAndRequestCameraPermissions(getActivity());
+        AndroidPacketCreator packetCreator = processor.getPacketCreator();
+        Map<String, Packet> inputSidePackets = new HashMap<>();
+
+        inputSidePackets.put(INPUT_NUM_HANDS_SIDE_PACKET_NAME, packetCreator.createInt32(NUM_HANDS));
+        processor.setInputSidePackets(inputSidePackets);
+
+        processor.addPacketCallback(
+                OUTPUT_LANDMARKS_STREAM_NAME,
+                packet -> {
+
+                    for (int i = 0; i < 60; i++) {
+                        List<NormalizedLandmarkList> multiHandLandmarks =
+                                PacketGetter.getProtoVector(packet, NormalizedLandmarkList.parser());
+                        result = extractHandLandmarks(multiHandLandmarks);
+                        sequence[i] = result;
+                    }
+                    if (tflite == null) {
+                        Log.e(TAG, "Image classifier has not been initialized; Skipped.");
+                        builder.append(new SpannableString("Uninitialized Classifier."));
+                    }
+                    printTopKLabels(builder);
+                    runInference();
+                    applyFilter();
+                    txtDichngu.setText(builder, TextView.BufferType.SPANNABLE);
+                });
+    }
+
+    private Runnable periodicClassify =
+            new Runnable() {
+                @Override
+                public void run() {
+                    classifyProcessor();
+                }
+            };
 
     protected int getNumLabels() {
         return labelList.size();
