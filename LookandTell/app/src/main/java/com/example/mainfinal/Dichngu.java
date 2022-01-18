@@ -166,7 +166,45 @@ public class Dichngu extends Fragment implements Serializable {
         setupPreviewDisplayView(view);
         AndroidAssetUtil.initializeNativeAssetManager(view.getContext());
         eglManager = new EglManager(null);
-        backgroundHandler.post(periodicClassify);
+//        backgroundHandler.post(periodicClassify);
+
+        processor =
+                new FrameProcessor(
+                        getActivity(),
+                        eglManager.getNativeContext(),
+                        BINARY_GRAPH_NAME,
+                        INPUT_VIDEO_STREAM_NAME,
+                        OUTPUT_VIDEO_STREAM_NAME);
+        processor
+                .getVideoSurfaceOutput()
+                .setFlipY(FLIP_FRAMES_VERTICALLY);
+
+        PermissionHelper.checkAndRequestCameraPermissions(getActivity());
+        AndroidPacketCreator packetCreator = processor.getPacketCreator();
+        Map<String, Packet> inputSidePackets = new HashMap<>();
+
+        inputSidePackets.put(INPUT_NUM_HANDS_SIDE_PACKET_NAME, packetCreator.createInt32(NUM_HANDS));
+        processor.setInputSidePackets(inputSidePackets);
+
+        processor.addPacketCallback(
+                OUTPUT_LANDMARKS_STREAM_NAME,
+                packet -> {
+
+                    for (int i = 0; i < 60; i++) {
+                        List<NormalizedLandmarkList> multiHandLandmarks =
+                                PacketGetter.getProtoVector(packet, NormalizedLandmarkList.parser());
+                        result = extractHandLandmarks(multiHandLandmarks);
+                        sequence[i] = result;
+                    }
+                    if (tflite == null) {
+                        Log.e(TAG, "Image classifier has not been initialized; Skipped.");
+                        builder.append(new SpannableString("Uninitialized Classifier."));
+                    }
+                    printTopKLabels(builder);
+                    runInference();
+                    applyFilter();
+                    txtDichngu.setText(builder, TextView.BufferType.SPANNABLE);
+                });
 
         if (startRecordBtn != null) {
             startRecordBtn.setOnClickListener(new View.OnClickListener() {
