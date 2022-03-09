@@ -1,7 +1,6 @@
 package com.example.mainfinal;
 
 import android.content.pm.ApplicationInfo;
-import android.graphics.Color;
 import android.graphics.SurfaceTexture;
 import android.os.Bundle;
 import com.example.mainfinal.R;
@@ -10,9 +9,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.fragment.app.Fragment;
 
-import android.os.Handler;
-import android.text.style.ForegroundColorSpan;
-import android.text.style.RelativeSizeSpan;
 import android.util.Log;
 import android.util.Size;
 import android.view.LayoutInflater;
@@ -22,8 +18,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.TextView;
-import android.text.SpannableString;
-import android.text.SpannableStringBuilder;
 
 import com.google.mediapipe.formats.proto.LandmarkProto.NormalizedLandmark;
 import com.google.mediapipe.formats.proto.LandmarkProto.NormalizedLandmarkList;
@@ -34,31 +28,21 @@ import com.google.mediapipe.components.FrameProcessor;
 import com.google.mediapipe.components.PermissionHelper;
 import com.google.mediapipe.framework.AndroidAssetUtil;
 import com.google.mediapipe.framework.AndroidPacketCreator;
-import com.google.mediapipe.framework.PacketCallback;
 import com.google.mediapipe.framework.PacketGetter;
 import com.google.mediapipe.framework.Packet;
 import com.google.mediapipe.glutil.EglManager;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.util.AbstractMap;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.StringTokenizer;
-
-import org.tensorflow.lite.Interpreter;
-import org.tensorflow.lite.support.common.FileUtil;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -83,39 +67,36 @@ public class Dichngu extends Fragment implements Serializable {
 
     // TODO: Rename and change types of parameters
     static {
+        // Load all native libraries needed by the app.
         System.loadLibrary("mediapipe_jni");
         System.loadLibrary("opencv_java3");
     }
 
     private String mParam1;
     private String mParam2;
+    // {@link SurfaceTexture} where the camera-preview frames can be accessed.
     private SurfaceTexture previewFrameTexture;
+    // {@link SurfaceView} that displays the camera-preview frames processed by a MediaPipe graph.
     private SurfaceView previewDisplayView;
+    // Creates and manages an {@link EGLContext}.
     private EglManager eglManager;
+    // Sends camera-preview frames into a MediaPipe graph for processing, and displays the processed
+    // frames onto a {@link Surface}.
     private FrameProcessor processor;
+    // Converts the GL_TEXTURE_EXTERNAL_OES texture from Android camera into a regular texture to be
+    // consumed by {@link FrameProcessor} and the underlying MediaPipe graph.
     private ExternalTextureConverter converter;
+    // ApplicationInfo for retrieving metadata defined in the manifest.
     private ApplicationInfo applicationInfo;
+    // Handles camera access via the {@link CameraX} Jetpack support library.
     private CameraXPreviewHelper cameraHelper;
     private float[] result = new float[126];
     private float[][] sequence = new float[60][126];
-    private float[][] labelProbArray = new float[1][20];
-    private float[][] filterLabelProbArray = new float[FILTER_STAGES][20];
-    protected Interpreter tflite;
-    private final Interpreter.Options tfliteOptions = new Interpreter.Options();
-    private List<String> labelList;
-    private static final int FILTER_STAGES = 3;
-    private static final float FILTER_FACTOR = 0.4f;
-    private static final int RESULTS_TO_SHOW = 3;
-    private static final float GOOD_PROB_THRESHOLD = 0.3f;
-    private static final int SMALL_COLOR = 0xffddaa88;
-    private SpannableStringBuilder builder = new SpannableStringBuilder();
-    private TextView txtDichngu;
-    private PriorityQueue<Map.Entry<String, Float>> sortedLabels =
-            new PriorityQueue<>(
-                    RESULTS_TO_SHOW,
-                    (o1, o2) -> (o1.getValue()).compareTo(o2.getValue()));
-    private Handler backgroundHandler;
+
+
+
     public Dichngu() {
+        // Required empty public constructor
     }
 
     /**
@@ -143,15 +124,6 @@ public class Dichngu extends Fragment implements Serializable {
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
-
-        try {
-            initializeModel();
-            labelList = loadLabelList();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        labelProbArray = new float[1][getNumLabels()];
-        filterLabelProbArray = new float[FILTER_STAGES][getNumLabels()];
     }
 
     ListenableFuture<ProcessCameraProvider> cameraProviderListenableFuture;
@@ -159,15 +131,14 @@ public class Dichngu extends Fragment implements Serializable {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_dichngu, container, false); // no delete
         FrameLayout startRecordBtn = view.findViewById(R.id.startRecordBtn);
-        txtDichngu = view.findViewById(R.id.txtDichNgu);
+
         previewDisplayView = new SurfaceView(view.getContext());
         setupPreviewDisplayView(view);
         AndroidAssetUtil.initializeNativeAssetManager(view.getContext());
         eglManager = new EglManager(null);
-//        backgroundHandler.post(periodicClassify);
-
         processor =
                 new FrameProcessor(
                         getActivity(),
@@ -188,23 +159,24 @@ public class Dichngu extends Fragment implements Serializable {
 
         processor.addPacketCallback(
                 OUTPUT_LANDMARKS_STREAM_NAME,
-                packet -> {
-
-                    for (int i = 0; i < 60; i++) {
+                (packet) -> {
+                    for(int i=0; i<60; i++) {
                         List<NormalizedLandmarkList> multiHandLandmarks =
                                 PacketGetter.getProtoVector(packet, NormalizedLandmarkList.parser());
                         result = extractHandLandmarks(multiHandLandmarks);
+//                        Log.v(TAG, String.valueOf(result.length));
                         sequence[i] = result;
+                        Log.v(TAG, String.valueOf(sequence[i][0]));
+//                        System.out.print(Arrays.toString(sequence[i]));
                     }
-                    if (tflite == null) {
-                        Log.e(TAG, "Image classifier has not been initialized; Skipped.");
-                        builder.append(new SpannableString("Uninitialized Classifier."));
-                    }
-                    printTopKLabels(builder);
-                    runInference();
-                    applyFilter();
-                    txtDichngu.setText(builder, TextView.BufferType.SPANNABLE);
+//                    TextView txtDichngu = view.findViewById(R.id.txtDichNgu);
+//                    txtDichngu.setText("hello world");
+
+
+//                     TODO: collect 30 frame, edit float[] result
+
                 });
+
 
         if (startRecordBtn != null) {
             startRecordBtn.setOnClickListener(new View.OnClickListener() {
@@ -217,7 +189,8 @@ public class Dichngu extends Fragment implements Serializable {
                 }
             });
         }
-        return view;
+
+        return view;//no delete
     }
 
     @Override
@@ -240,12 +213,6 @@ public class Dichngu extends Fragment implements Serializable {
 
         // Hide preview display until we re-open the camera again.
         previewDisplayView.setVisibility(View.GONE);
-    }
-
-    @Override
-    public void onDestroy() {
-        close();
-        super.onDestroy();
     }
 
     @Override
@@ -305,9 +272,16 @@ public class Dichngu extends Fragment implements Serializable {
 
     protected void onPreviewDisplaySurfaceChanged(
             SurfaceHolder holder, int format, int width, int height) {
+        // (Re-)Compute the ideal size of the camera-preview display (the area that the
+        // camera-preview frames get rendered onto, potentially with scaling and rotation)
+        // based on the size of the SurfaceView that contains the display.
         Size viewSize = computeViewSize(width, height);
         Size displaySize = cameraHelper.computeDisplaySizeFromViewSize(viewSize);
         boolean isCameraRotated = cameraHelper.isCameraRotated();
+
+        // Connect the converter to the camera-preview frames as its input (via
+        // previewFrameTexture), and configure the output width and height as the computed
+        // display size.
         converter.setSurfaceTextureAndAttachToGLContext(
                 previewFrameTexture,
                 isCameraRotated ? displaySize.getHeight() : displaySize.getWidth(),
@@ -317,6 +291,8 @@ public class Dichngu extends Fragment implements Serializable {
     protected Size computeViewSize(int width, int height) {
         return new Size(width, height);
     }
+
+
 
     public float[] extractHandLandmarks(List<NormalizedLandmarkList> multiHandLandmarks) {
         List<Float> keypoints = new ArrayList<>();
@@ -331,10 +307,11 @@ public class Dichngu extends Fragment implements Serializable {
         int i = 0;
 
         for (Float f : keypoints) {
-            result[i++] = (f != null ? f : Float.NaN);
+            result[i++] = (f != null ? f : Float.NaN); // Or whatever default you want.
         }
         return result;
     }
+
 
     private ByteBuffer toByteBuffer(List<Float> list) throws IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -345,168 +322,4 @@ public class Dichngu extends Fragment implements Serializable {
         ByteBuffer.wrap(bytes);
         return buffer;
     }
-
-    void applyFilter() {
-        int numLabels = getNumLabels();
-
-        for (int j = 0; j < numLabels; ++j) {
-            filterLabelProbArray[0][j] +=
-                    FILTER_FACTOR * (getProbability(j) - filterLabelProbArray[0][j]);
-        }
-
-        for (int i = 1; i < FILTER_STAGES; ++i) {
-            for (int j = 0; j < numLabels; ++j) {
-                filterLabelProbArray[i][j] +=
-                        FILTER_FACTOR * (filterLabelProbArray[i - 1][j] - filterLabelProbArray[i][j]);
-            }
-        }
-
-        for (int j = 0; j < numLabels; ++j) {
-            setProbability(j, filterLabelProbArray[FILTER_STAGES - 1][j]);
-        }
-    }
-
-    public void setNumThreads(int numThreads) throws IOException {
-        if (tflite != null) {
-            tfliteOptions.setNumThreads(numThreads);
-            close();
-        }
-        initializeModel();
-    }
-
-    /** Closes tflite to release resources. */
-    public void close() {
-        tflite.close();
-        tflite = null;
-    }
-
-    private void initializeModel() throws IOException {
-        if (tflite == null) {
-            MappedByteBuffer tfliteModel = FileUtil.loadMappedFile(getActivity(), getModelPath());
-            tflite = new Interpreter(tfliteModel, tfliteOptions);
-        }
-    }
-
-    private List<String> loadLabelList() throws IOException {
-        List<String> labelList = new ArrayList<String>();
-        BufferedReader reader =
-                new BufferedReader(new InputStreamReader(getActivity().getAssets().open(getLabelPath())));
-        String line;
-        line = reader.readLine();
-        reader.close();
-
-        StringTokenizer tokenizer = new StringTokenizer(line, ",");
-        while (tokenizer.hasMoreTokens()) {
-            String token = tokenizer.nextToken();
-            labelList.add(token);
-        }
-        return labelList;
-    }
-
-    private void printTopKLabels(SpannableStringBuilder builder) {
-        for (int i = 0; i < getNumLabels(); ++i) {
-            sortedLabels.add(
-                    new AbstractMap.SimpleEntry<>(labelList.get(i), getNormalizedProbability(i)));
-            if (sortedLabels.size() > RESULTS_TO_SHOW) {
-                sortedLabels.poll();
-            }
-        }
-
-        final int size = sortedLabels.size();
-        for (int i = 0; i < size; i++) {
-            Map.Entry<String, Float> label = sortedLabels.poll();
-            SpannableString span =
-                    new SpannableString(String.format("%s:  %4.2f\n", label.getKey(), label.getValue()));
-            int color;
-            // Make it white when probability larger than threshold.
-            if (label.getValue() > GOOD_PROB_THRESHOLD) {
-                color = Color.BLACK;
-            } else {
-                color = SMALL_COLOR;
-            }
-            // Make first item bigger.
-            if (i == size - 1) {
-                float sizeScale = (i == size - 1) ? 1.75f : 0.8f;
-                span.setSpan(new RelativeSizeSpan(sizeScale), 0, span.length(), 0);
-            }
-            span.setSpan(new ForegroundColorSpan(color), 0, span.length(), 0);
-            builder.insert(0, span);
-        }
-    }
-
-    private void classifyProcessor() {
-        processor =
-                new FrameProcessor(
-                        getActivity(),
-                        eglManager.getNativeContext(),
-                        BINARY_GRAPH_NAME,
-                        INPUT_VIDEO_STREAM_NAME,
-                        OUTPUT_VIDEO_STREAM_NAME);
-        processor
-                .getVideoSurfaceOutput()
-                .setFlipY(FLIP_FRAMES_VERTICALLY);
-
-        PermissionHelper.checkAndRequestCameraPermissions(getActivity());
-        AndroidPacketCreator packetCreator = processor.getPacketCreator();
-        Map<String, Packet> inputSidePackets = new HashMap<>();
-
-        inputSidePackets.put(INPUT_NUM_HANDS_SIDE_PACKET_NAME, packetCreator.createInt32(NUM_HANDS));
-        processor.setInputSidePackets(inputSidePackets);
-
-        processor.addPacketCallback(
-                OUTPUT_LANDMARKS_STREAM_NAME,
-                packet -> {
-
-                    for (int i = 0; i < 60; i++) {
-                        List<NormalizedLandmarkList> multiHandLandmarks =
-                                PacketGetter.getProtoVector(packet, NormalizedLandmarkList.parser());
-                        result = extractHandLandmarks(multiHandLandmarks);
-                        sequence[i] = result;
-                    }
-                    if (tflite == null) {
-                        Log.e(TAG, "Image classifier has not been initialized; Skipped.");
-                        builder.append(new SpannableString("Uninitialized Classifier."));
-                    }
-                    printTopKLabels(builder);
-                    runInference();
-                    applyFilter();
-                    txtDichngu.setText(builder, TextView.BufferType.SPANNABLE);
-                });
-    }
-
-    private Runnable periodicClassify =
-            new Runnable() {
-                @Override
-                public void run() {
-                    classifyProcessor();
-                }
-            };
-
-    protected int getNumLabels() {
-        return labelList.size();
-    }
-    protected String getModelPath() {
-        return "model.tflite";
-    }
-    protected String getLabelPath() {
-        return "labels.txt";
-    }
-    protected float getProbability(int labelIndex) {
-        return labelProbArray[0][labelIndex];
-    }
-    protected void setProbability(int labelIndex, Number value) {
-        labelProbArray[0][labelIndex] = value.floatValue();
-    }
-    protected float getNormalizedProbability(int labelIndex) {
-        // TODO the following value isn't in [0,1] yet, but may be greater. Why?
-        return getProbability(labelIndex);
-    }
-    protected void runInference() {
-        tflite.run(sequence, labelProbArray);
-    }
-
-
-
-
-
 }
