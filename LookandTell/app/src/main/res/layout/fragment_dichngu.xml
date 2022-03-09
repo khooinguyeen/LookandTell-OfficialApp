@@ -27,12 +27,17 @@
             android:layout_centerHorizontal="true"
             android:layout_marginTop="41dp"
             android:hint="@string/hint1">
+            <TextView
+                android:id="@+id/textview1"
+                android:layout_width="325dp"
+                android:layout_height="wrap_content"/>
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/txtDichNgu"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@drawable/round_corner"
+                android:textColor="@color/black"
                 android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
 

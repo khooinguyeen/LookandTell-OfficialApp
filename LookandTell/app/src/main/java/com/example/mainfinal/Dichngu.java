@@ -134,7 +134,7 @@ public class Dichngu extends Fragment implements Serializable {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_dichngu, container, false); // no delete
         FrameLayout startRecordBtn = view.findViewById(R.id.startRecordBtn);
-
+        TextView txtDichngu = view.findViewById(R.id.txtDichNgu);
         previewDisplayView = new SurfaceView(view.getContext());
         setupPreviewDisplayView(view);
         AndroidAssetUtil.initializeNativeAssetManager(view.getContext());
@@ -169,14 +169,10 @@ public class Dichngu extends Fragment implements Serializable {
                         Log.v(TAG, String.valueOf(sequence[i][0]));
 //                        System.out.print(Arrays.toString(sequence[i]));
                     }
-//                    TextView txtDichngu = view.findViewById(R.id.txtDichNgu);
-//                    txtDichngu.setText("hello world");
-
-
 //                     TODO: collect 30 frame, edit float[] result
 
                 });
-
+        txtDichngu.setText("hello world");
 
         if (startRecordBtn != null) {
             startRecordBtn.setOnClickListener(new View.OnClickListener() {

@@ -28,6 +28,7 @@
             android:layout_marginTop="41dp"
             android:hint="@string/hint1">
 
+
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/txtDichNgu"
                 android:layout_width="match_parent"
