@@ -80,7 +80,7 @@ public class Dichngu extends Fragment {
                 @Override
                 public void onClick(View v) {
                     RequestQueue queue = Volley.newRequestQueue(requireActivity());
-                    String url = "https://www.google.com"; //TODO: thay thành url của server
+                    String url = "https://www.metaweather.com/api/location/search/?query=sydney"; //TODO: thay thành url của server mình    
 
                     // Request a string response from the provided URL.
                     StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
@@ -88,7 +88,7 @@ public class Dichngu extends Fragment {
                                 @Override
                                 public void onResponse(String response) {
                                     // Display the first 500 characters of the response string.
-                                    txtDichngu.setText("Response is: " + response.substring(0,500)); //TODO: thay thành label nhận từ server
+                                    txtDichngu.setText("Response is: " + response); //TODO: thay thành label nhận từ server
                                 }
                             }, new Response.ErrorListener() {
                         @Override
