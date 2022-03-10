@@ -17,6 +17,8 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
+import java.util.Objects;
+
 /**
  * A simple {@link Fragment} subclass.
  * Use the {@link Dichngu#newInstance} factory method to
@@ -72,33 +74,31 @@ public class Dichngu extends Fragment {
         ImageView stopRecordBtn = view.findViewById(R.id.stopRecordBtn);
         TextView txtDichngu = view.findViewById(R.id.txtDichNgu);
         txtDichngu.setText("xin chào");
-//
-//        // Instantiate the RequestQueue.
-//        RequestQueue queue = Volley.newRequestQueue(getActivity());
-//        String url = "https://www.google.com";
-//
-//// Request a string response from the provided URL.
-//        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
-//                new Response.Listener<String>() {
-//                    @Override
-//                    public void onResponse(String response) {
-//                        // Display the first 500 characters of the response string.
-//                        txtDichngu.setText("Response is: " + response.substring(0,500));
-//                    }
-//                }, new Response.ErrorListener() {
-//            @Override
-//            public void onErrorResponse(VolleyError error) {
-//                txtDichngu.setText("That didn't work!");
-//            }
-//        });
-//
-//// Add the request to the RequestQueue.
-//        queue.add(stringRequest);
 
         if ( stopRecordBtn != null ) {
             stopRecordBtn.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
+                    RequestQueue queue = Volley.newRequestQueue(requireActivity());
+                    String url = "https://www.google.com"; //TODO: thay thành url của server
+
+                    // Request a string response from the provided URL.
+                    StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+                            new Response.Listener<String>() {
+                                @Override
+                                public void onResponse(String response) {
+                                    // Display the first 500 characters of the response string.
+                                    txtDichngu.setText("Response is: " + response.substring(0,500)); //TODO: thay thành label nhận từ server
+                                }
+                            }, new Response.ErrorListener() {
+                        @Override
+                        public void onErrorResponse(VolleyError error) {
+                            txtDichngu.setText("That didn't work!"); //TODO: trả ra thông báo error
+                        }
+                    });
+
+                    // Add the request to the RequestQueue.
+                    queue.add(stringRequest);
                     if ( v.equals(stopRecordBtn) ) {
                         Fragment fragment = new dichngu_stop();
                         getActivity().getSupportFragmentManager().beginTransaction().replace(R.id.main,fragment).commit();
