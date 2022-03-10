@@ -4,7 +4,7 @@
     android:id="@+id/dichngu_stopFragment"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".dichngu_stop">
+    tools:context=".Dichngu">
 
     <RelativeLayout
         android:layout_width="match_parent"
@@ -45,7 +45,7 @@
             android:layout_centerHorizontal="true"
             android:clickable="true"
             android:focusable="true"
-            android:src="@drawable/ic_record_button"/>
+            android:src="@drawable/ic_ellipse_53"/>
 
     </RelativeLayout>
 
