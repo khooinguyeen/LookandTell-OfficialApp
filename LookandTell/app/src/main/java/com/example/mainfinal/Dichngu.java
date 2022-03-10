@@ -8,6 +8,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.TextView;
+
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -62,6 +70,30 @@ public class Dichngu extends Fragment {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_dichngu_stop, container, false);
         ImageView stopRecordBtn = view.findViewById(R.id.stopRecordBtn);
+        TextView txtDichngu = view.findViewById(R.id.txtDichNgu);
+        txtDichngu.setText("xin chào");
+//
+//        // Instantiate the RequestQueue.
+//        RequestQueue queue = Volley.newRequestQueue(getActivity());
+//        String url = "https://www.google.com";
+//
+//// Request a string response from the provided URL.
+//        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+//                new Response.Listener<String>() {
+//                    @Override
+//                    public void onResponse(String response) {
+//                        // Display the first 500 characters of the response string.
+//                        txtDichngu.setText("Response is: " + response.substring(0,500));
+//                    }
+//                }, new Response.ErrorListener() {
+//            @Override
+//            public void onErrorResponse(VolleyError error) {
+//                txtDichngu.setText("That didn't work!");
+//            }
+//        });
+//
+//// Add the request to the RequestQueue.
+//        queue.add(stringRequest);
 
         if ( stopRecordBtn != null ) {
             stopRecordBtn.setOnClickListener(new View.OnClickListener() {

@@ -26,7 +26,7 @@
             android:layout_below="@+id/preview"
             android:layout_centerHorizontal="true"
             android:layout_marginTop="41dp"
-            android:hint="@string/hint1">
+            android:hint="@string/hint1" >
 
 
             <com.google.android.material.textfield.TextInputEditText
@@ -34,7 +34,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@drawable/round_corner"
-                android:inputType="text"/>
+                android:inputType="text"
+                android:textColor="@color/black" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <ImageView
