@@ -4,6 +4,12 @@ import android.content.pm.ApplicationInfo;
 import android.graphics.SurfaceTexture;
 import android.os.Bundle;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.Volley;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import androidx.camera.lifecycle.ProcessCameraProvider;
@@ -17,7 +23,7 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
-import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.mediapipe.formats.proto.LandmarkProto.NormalizedLandmark;
 import com.google.mediapipe.formats.proto.LandmarkProto.NormalizedLandmarkList;
@@ -32,6 +38,8 @@ import com.google.mediapipe.framework.PacketGetter;
 import com.google.mediapipe.framework.Packet;
 import com.google.mediapipe.glutil.EglManager;
 
+import org.json.JSONArray;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -42,11 +50,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link Dichngu#newInstance} factory method to
- * create an instance of this fragment.
- */
 public class dichngu_stop extends Fragment implements Serializable {
 
     // TODO: Rename parameter arguments, choose names that match
@@ -106,8 +109,8 @@ public class dichngu_stop extends Fragment implements Serializable {
      * @return A new instance of fragment Dichngu.
      */
     // TODO: Rename and change types and number of parameters
-    public static Dichngu newInstance(String param1, String param2) {
-        Dichngu fragment = new Dichngu();
+    public static dichngu_stop newInstance(String param1, String param2) {
+        dichngu_stop fragment = new dichngu_stop();
         Bundle args = new Bundle();
         args.putString(ARG_PARAM1, param1);
         args.putString(ARG_PARAM2, param2);
@@ -130,8 +133,8 @@ public class dichngu_stop extends Fragment implements Serializable {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View view = inflater.inflate(R.layout.fragment_dichngu, container, false); // no delete
-        FrameLayout startRecordBtn = view.findViewById(R.id.startRecordBtn);
+        View view = inflater.inflate(R.layout.fragment_dichngu_stop, container, false);
+        FrameLayout stopRecordBtn = view.findViewById(R.id.stopRecordBtn);
         previewDisplayView = new SurfaceView(view.getContext());
         setupPreviewDisplayView(view);
         AndroidAssetUtil.initializeNativeAssetManager(view.getContext());
@@ -170,13 +173,11 @@ public class dichngu_stop extends Fragment implements Serializable {
                 });
 
 
-        if (startRecordBtn != null) {
-            startRecordBtn.setOnClickListener(new View.OnClickListener() {
+        if (stopRecordBtn != null) {
+            stopRecordBtn.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-
-                    if (v.equals(startRecordBtn)) {
-
+                    if (v.equals(stopRecordBtn)) {
                         Fragment fragment = new Dichngu();
                         getActivity().getSupportFragmentManager().beginTransaction().replace(R.id.main, fragment).commit();
                     }
@@ -184,7 +185,7 @@ public class dichngu_stop extends Fragment implements Serializable {
             });
         }
 
-        return view;//no delete
+        return view;
     }
 
     @Override
@@ -317,3 +318,22 @@ public class dichngu_stop extends Fragment implements Serializable {
         return buffer;
     }
 }
+//
+//    RequestQueue queue = Volley.newRequestQueue(requireActivity());
+//    String url = "http://127.0.0.1:5000/predict";
+//
+//    // POST data to the provided URL.
+//    JsonArrayRequest request = new JsonArrayRequest(Request.Method.POST, url, null, new Response.Listener<JSONArray>() {
+//        @Override
+//        public void onResponse(JSONArray response) {
+//
+//        }
+//    }, new Response.ErrorListener() {
+//        @Override
+//        public void onErrorResponse(VolleyError error) {
+//            Toast.makeText(view.getContext(), "Something wrong", Toast.LENGTH_SHORT).show();
+//        }
+//    });
+//
+//// Add the request to the RequestQueue.
+//                    queue.add(request);
