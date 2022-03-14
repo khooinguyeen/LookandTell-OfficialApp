@@ -9,7 +9,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/khooinguyeen/Sign-Language-Translation/blob/main/Sign%20Language%20Translator/Demo/lookandtell.png">
-    <img src="images/logo.png" alt="Logo" width="80" height="80">
+    <img src="https://github.com/khooinguyeen/Sign-Language-Translator/blob/main/Sign%20Language%20Translator/Demo/lookandtell.png" width="400">
   </a>
 
   <h3 align="center">Look & Tell</h3>

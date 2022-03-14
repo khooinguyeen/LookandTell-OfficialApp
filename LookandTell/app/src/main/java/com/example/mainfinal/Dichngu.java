@@ -16,14 +16,9 @@ import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
-import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
 import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.util.Objects;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -76,58 +71,15 @@ public class Dichngu extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View view = inflater.inflate(R.layout.fragment_dichngu_stop, container, false);
-        ImageView stopRecordBtn = view.findViewById(R.id.stopRecordBtn);
+        View view = inflater.inflate(R.layout.fragment_dichngu, container, false);
+        ImageView startRecordBtn = view.findViewById(R.id.startRecordBtn);
         TextView txtDichngu = view.findViewById(R.id.txtDichNgu);
-        txtDichngu.setText("xin chào");
 
-        if ( stopRecordBtn != null ) {
-            stopRecordBtn.setOnClickListener(new View.OnClickListener() {
+        if ( startRecordBtn != null ) {
+            startRecordBtn.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    RequestQueue queue = Volley.newRequestQueue(requireActivity());
-                    String url = "https://www.metaweather.com/api/location/search/?query=sydney"; //TODO: thay thành url của server mình
-
-                    JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null,
-                            new Response.Listener<JSONArray>() {
-                                @Override
-                                public void onResponse(JSONArray response) {
-                                    String cityID = "";
-                                    try {
-                                        JSONObject cityInfo = response.getJSONObject(0);
-                                        cityID = cityInfo.getString("woeid");
-                                    } catch (JSONException e) {
-                                        e.printStackTrace();
-                                    }
-                                    Toast.makeText(requireActivity(), "City ID = " + cityID, Toast.LENGTH_SHORT).show();
-                                }
-                            }, new Response.ErrorListener() {
-                        @Override
-                        public void onErrorResponse(VolleyError error) {
-                            Toast.makeText(requireActivity(), "Something wrong.", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                    queue.add(request);
-
-                    // Request a string response from the provided URL.
-//                    StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
-//                            new Response.Listener<String>() {
-//                                @Override
-//                                public void onResponse(String response) {
-//                                    // Display the first 500 characters of the response string.
-//                                    Toast.makeText(requireActivity(), response, Toast.LENGTH_SHORT).show();
-//                                }
-//                            }, new Response.ErrorListener() {
-//                        @Override
-//                        public void onErrorResponse(VolleyError error) {
-////                            txtDichngu.setText("That didn't work!"); //TODO: trả ra thông báo error
-//                            Toast.makeText(requireActivity(), "Error", Toast.LENGTH_SHORT).show();
-//                        }
-//                    });
-
-                    // Add the request to the RequestQueue.
-
-                    if ( v.equals(stopRecordBtn) ) {
+                    if ( v.equals(startRecordBtn) ) {
                         Fragment fragment = new dichngu_stop();
                         getActivity().getSupportFragmentManager().beginTransaction().replace(R.id.main,fragment).commit();
                     }

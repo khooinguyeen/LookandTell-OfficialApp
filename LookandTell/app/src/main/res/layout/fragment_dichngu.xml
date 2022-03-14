@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/dichnguFragment"
     android:layout_width="match_parent"
@@ -16,7 +15,8 @@
             android:layout_width="359dp"
             android:layout_height="286dp"
             android:layout_centerHorizontal="true"
-            android:layout_marginTop="117dp" />
+            android:layout_marginTop="117dp"
+            />
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/dichnguHolder"
@@ -26,45 +26,27 @@
             android:layout_below="@+id/preview"
             android:layout_centerHorizontal="true"
             android:layout_marginTop="41dp"
-            android:hint="@string/hint1">
-            <TextView
-                android:id="@+id/textview1"
-                android:layout_width="325dp"
-                android:layout_height="wrap_content"/>
+            android:hint="@string/hint1" >
+
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/txtDichNgu"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@drawable/round_corner"
-                android:textColor="@color/black"
-                android:inputType="text" />
+                android:inputType="text"
+                android:textColor="@color/black" />
         </com.google.android.material.textfield.TextInputLayout>
 
-
-        <FrameLayout
+        <ImageView
             android:id="@+id/startRecordBtn"
-            android:clickable="true"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_above="@+id/dichnguHolder"
             android:layout_centerHorizontal="true"
-            android:background="@drawable/ic_play_circle"
-            android:backgroundTint="@color/gray"
-            >
-
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent">
-
-                <ImageView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_centerInParent="true"
-                    android:src="@drawable/ic_record_button"
-                    />
-            </RelativeLayout>
-        </FrameLayout>
+            android:clickable="true"
+            android:focusable="true"
+            android:src="@drawable/ic_ellipse_53"/>
 
     </RelativeLayout>
 

@@ -16,6 +16,8 @@
     <string name="stopRecord">Stop Recording</string>
     <string name="audioStart">Star Recording</string>
     <string name="audioStop">Stop Recording</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 
 
 </resources>

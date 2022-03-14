@@ -6,8 +6,7 @@
         <entry key="..\:/Games and Apps/LookandTell-main/LookandTell/app/src/main/res/layout/fragment_chuyenngu.xml" value="0.16770833333333332" />
         <entry key="..\:/Games and Apps/LookandTell-main/LookandTell/app/src/main/res/layout/fragment_dichngu.xml" value="0.10740740740740741" />
         <entry key="..\:/Games and Apps/LookandTell-main/LookandTell/app/src/main/res/layout/fragment_dichngu_stop.xml" value="0.16770833333333332" />
-        <entry key="..\:/Games and Apps/LookandTell-main/LookandTell/app/src/main/res/layout/fragment_tudien.xml" value="0.16770833333333332" />
-        <entry key="..\:/Games and Apps/LookandTell-main/LookandTell/app/src/main/res/layout/fragment_tudien_results.xml" value="0.16770833333333332" />
+        <entry key="..\:/Games and Apps/LookandTell-main/LookandTell/app/src/main/res/layout/fragment_tudien.xml" value="0.1175925925925926" />
         <entry key="..\:/MainFinal/app/src/main/res/drawable/item_selector.xml" value="0.18076923076923077" />
         <entry key="..\:/MainFinal/app/src/main/res/drawable/round_corner.xml" value="0.18076923076923077" />
         <entry key="..\:/MainFinal/app/src/main/res/drawable/round_searching.xml" value="0.1" />
@@ -23,6 +22,9 @@
         <entry key="..\:/MainFinal/app/src/main/res/layout/fragment_tudien.xml" value="0.2" />
         <entry key="..\:/MainFinal/app/src/main/res/layout/fragment_tudien_results.xml" value="0.11548913043478261" />
         <entry key="..\:/MainFinal/app/src/main/res/menu/menu.xml" value="0.1675213675213675" />
+        <entry key="..\:/Users/T3DCOMPUTER/Documents/GitHub/LookandTell-OfficialApp/LookandTell/app/src/main/res/layout/fragment_dichngu.xml" value="0.33" />
+        <entry key="..\:/Users/T3DCOMPUTER/Documents/GitHub/LookandTell-OfficialApp/LookandTell/app/src/main/res/layout/fragment_dichngu_right.xml" value="0.20416666666666666" />
+        <entry key="..\:/Users/T3DCOMPUTER/Documents/GitHub/LookandTell-OfficialApp/LookandTell/app/src/main/res/layout/fragment_dichngu_stop.xml" value="0.22" />
         <entry key="..\:/khooinguyeen/code/MainFinal/app/src/main/res/drawable-v24/ic_launcher_foreground.xml" value="0.19583333333333333" />
         <entry key="..\:/khooinguyeen/code/MainFinal/app/src/main/res/drawable/ic_border.xml" value="0.19583333333333333" />
         <entry key="..\:/khooinguyeen/code/MainFinal/app/src/main/res/drawable/ic_ellipse_53.xml" value="0.19583333333333333" />
