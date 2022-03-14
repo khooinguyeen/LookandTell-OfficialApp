@@ -4,6 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:id="@+id/tudien_resultsFragment"
+    android:textColor="@color/black"
     tools:context=".tudien_results">
 
 </FrameLayout>

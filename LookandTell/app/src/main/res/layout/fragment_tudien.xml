@@ -32,17 +32,18 @@
                     android:layout_height="wrap_content"
                     android:layout_centerVertical="true"
                     android:layout_marginStart="20dp"
-                    android:hint="@string/searching"
-                    android:background="@drawable/round_searching"/>
+                    android:background="@drawable/round_searching"
+                    android:textColor="@color/black"
+                    android:hint="@string/searching" />
 
                 <ImageView
+                    android:id="@+id/search_go_btn"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:src="@drawable/ic_search"
                     android:layout_centerVertical="true"
-                    android:layout_toRightOf="@+id/txtSearch"
                     android:layout_marginStart="20dp"
-                    android:id="@+id/search_go_btn"/>
+                    android:layout_toRightOf="@+id/txtSearch"
+                    android:src="@drawable/ic_search" />
 
             </RelativeLayout>
 
